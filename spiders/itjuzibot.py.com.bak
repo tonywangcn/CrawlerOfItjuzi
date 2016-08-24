@@ -1,0 +1,53 @@
+#!/usr/bin/env python 
+# -*- coding: utf-8 -*-
+import scrapy
+from scrapy.loader import ItemLoader
+from itjuzi.items import ItjuziItem
+class ItjuziSpider(scrapy.Spider):
+	name = "itjuzi"
+	allowed_domains = ["itjuzi.com"]
+	start_urls = [
+		"http://www.itjuzi.com/company/43292"
+    	]
+	
+
+	headers = {
+    	"Accept": "*/*",
+    	"Accept-Encoding": "gzip,deflate",
+    	"Accept-Language": "en-US,en;q=0.8,zh-TW;q=0.6,zh;q=0.4",
+	"Connection": "keep-alive",
+	"Content-Type":" application/x-www-form-urlencoded; charset=UTF-8",
+   	"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36",
+    	"Referer": "http://www.itjuzi.com/"
+    	}
+
+def post_login(self, response):
+	print 'Preparing login'
+        #下面这句话用于抓取请求网页后返回网页中的_xsrf字段的文字, 用于成功提交表单
+#        xsrf = Selector(response).xpath('//input[@name="_xsrf"]/@value').extract()[0]
+#        print xsrf
+        #FormRequeset.from_response是Scrapy提供的一个函数, 用于post表单
+        #登陆成功后, 会调用after_login回调函数
+	return [FormRequest.from_response(response,   #"http://www.zhihu.com/login",
+		meta = {'cookiejar' : response.meta['cookiejar']},
+		headers = self.headers,  #注意此处的headers
+		formdata = {
+		'identity': 'plantpark.net@gmail.com',
+		'password': 'EcP-z64-WaA-owt'
+		},
+		callback = self.after_login,
+		dont_filter = True
+		)]
+
+def after_login(self, response) :
+	for url in self.start_urls :
+		yield self.make_requests_from_url(url)
+
+
+
+def parse(self, response):
+	l = ItemLoader(item = ItjuziItem(),response=response)
+	l.add_xpath('link',"//div[@class='titlebar']")
+	return l.load_item()
+#			for x,y,z in zip(item["title"],item["link"],item["desc"]):
+#				print x.encode("utf-8") = item["title"],y.encode("utf-8"),z.encode("utf-8") 
